@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(CUDAPlayground LANGUAGES C CXX CUDA)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-
-
 # ------------------------------------------------------------------------------
 # setting default cmake type to Release
 # ------------------------------------------------------------------------------
@@ -15,31 +12,6 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
             STRING "Choose the type of build." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif ()
-
-# find NCCL---------------------------------------------------------------------
-# 2.7 at least
-include("cmake/FindNCCL.cmake")
-include_directories(SYSTEM ${NCCL_INCLUDE_DIRS})
-if (NCCL_MAJOR_VERSION VERSION_LESS "2" OR NCCL_MINOR_VERSION VERSION_LESS "7")
-    message(FATAL_ERROR "The version of NCCL is required at least 2.7")
-endif ()
-
-# find glog---------------------------------------------------------------------
-include("cmake/FindGlog.cmake")
-if (NOT GLOG_FOUND)
-    message(FATAL_ERROR "glog not found, please install the glog library")
-else ()
-    include_directories(SYSTEM ${GLOG_INCLUDE_DIRS})
-endif ()
-
-# find gflags-------------------------------------------------------------------
-include("cmake/FindGFlags.cmake")
-
-if (NOT GFLAGS_FOUND)
-    message(STATUS "gflags not found, build without gflags")
-else ()
-    include_directories(SYSTEM ${GFLAGS_INCLUDE_DIRS})
 endif ()
 
 find_package(CUDAToolkit)
@@ -60,8 +32,8 @@ else ()
 endif ()
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
 
-add_executable(main src/main.cu src/flags.cc)
-target_link_libraries(main ${EXTRA_LIBS} ${NCCL_LIBRARIES} ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES})
+add_executable(main src/main.cu)
+target_link_libraries(main ${EXTRA_LIBS})
 
