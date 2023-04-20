@@ -60,11 +60,66 @@ void work_list(Stream& stream) {
   }
 }
 
+void work_list_swap(Stream& stream) {
+  Queue<int> queue1, queue2;
+  int max_elem = 1000;
+  queue1.Init(100 * 100);  // capacity
+  queue2.Init(100 * 100);  // capacity
+
+  queue1.Clear(stream);
+  queue2.Clear(stream);
+  {
+    auto d_queue1 = queue1.DeviceObject();  // should be called after Init
+
+    LaunchKernel(
+        stream,
+        [=] __device__(int max) mutable {
+          for (int i = TID_1D; i < max; i += TOTAL_THREADS_1D) {
+            d_queue1.Append(0);
+          }
+        },
+        max_elem);
+  }
+
+  for (int i = 0; i < 10; i++) {
+    queue2.Clear(stream);
+
+    auto d_in_queue = queue1.DeviceObject();  // should be called after Init
+    auto d_out_queue = queue2.DeviceObject();
+
+    LaunchKernel(
+        stream,
+        [=] __device__(int max) mutable {
+          for (int i = TID_1D; i < d_in_queue.size(); i += TOTAL_THREADS_1D) {
+            d_out_queue.Append(d_in_queue[i] + 1);
+          }
+        },
+        max_elem);
+    queue1.Swap(queue2);
+  }
+
+  stream.Sync();
+  auto size = queue1.size(stream);
+  std::cout << "queue size: " << size << std::endl;
+
+  thrust::host_vector<int> h_data(size);
+
+  CHECK_CUDA(cudaMemcpyAsync(thrust::raw_pointer_cast(h_data.data()),
+                             queue1.data(), size * sizeof(int),
+                             cudaMemcpyDeviceToHost, stream.cuda_stream()));
+  stream.Sync();
+
+  for (int i = 0; i < size; i++) {
+    std::cout << "idx: " << i << " data: " << h_data[i] << std::endl;
+  }
+}
+
 void Run() {
   Stream stream;
 
   vec_add(stream);
   work_list(stream);
+  work_list_swap(stream);
 }
 
 #endif  // CUDAPLAYGROUND_INCLUDE_MAIN_H_
