@@ -127,6 +127,10 @@ class Queue {
 
   size_t size(const Stream& stream) const { return counter_.get(stream); }
 
+  void set_size(const Stream& stream, SIZE_T size) {
+    counter_.set(size, stream);
+  }
+
   T* data() { return thrust::raw_pointer_cast(data_.data()); }
 
   const T* data() const { return thrust::raw_pointer_cast(data_.data()); }

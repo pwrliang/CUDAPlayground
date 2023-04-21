@@ -68,18 +68,19 @@ void work_list_swap(Stream& stream) {
 
   queue1.Clear(stream);
   queue2.Clear(stream);
-  {
-    auto d_queue1 = queue1.DeviceObject();  // should be called after Init
 
-    LaunchKernel(
-        stream,
-        [=] __device__(int max) mutable {
-          for (int i = TID_1D; i < max; i += TOTAL_THREADS_1D) {
-            d_queue1.Append(0);
-          }
-        },
-        max_elem);
-  }
+  std::vector<int> host_data;
+
+  host_data.push_back(1);
+  host_data.push_back(2);
+  host_data.push_back(3);
+  host_data.push_back(4);
+  host_data.push_back(5);
+
+  CHECK_CUDA(cudaMemcpyAsync(queue1.data(), host_data.data(),
+                             sizeof(int) * host_data.size(),
+                             cudaMemcpyHostToDevice, stream.cuda_stream()));
+  queue1.set_size(stream, host_data.size());
 
   for (int i = 0; i < 10; i++) {
     queue2.Clear(stream);
